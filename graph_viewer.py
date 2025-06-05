@@ -2,8 +2,8 @@
 import sys
 import os
 import json
-from datetime import timedelta
 import math
+import mplcursors
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QMessageBox
@@ -176,21 +176,21 @@ class GraphViewer(QWidget):
         outer_size = 100   # 예: 80 포인트^2
         inner_size = 50   # 예: 30 포인트^2
 
-        # ② 각 포인트마다 “큰 원(스트리머)” → “작은 원(채팅창)” 순으로 겹쳐서 그리기
+        scatter_artists = []  # 툴팁 기능을 걸 점(artists)을 모아둘 리스트
         for cx, ly, chat_e, audio_e, st, et in self.points:
             # 큰 원: 스트리머 감정
-            self.ax.scatter(
+            artist_outer = self.ax.scatter(
                 cx, ly,
                 c=COLOR_MAP.get(audio_e, "black"),
                 s=outer_size,
                 marker="o",
                 edgecolors="white",
                 linewidths=0.5,
-                alpha=0.7,
+                alpha=0.5,
                 zorder=1
             )
             # 작은 원: 채팅창 감정
-            self.ax.scatter(
+            artist_inner = self.ax.scatter(
                 cx, ly,
                 c=COLOR_MAP.get(chat_e, "black"),
                 s=inner_size,
@@ -200,6 +200,40 @@ class GraphViewer(QWidget):
                 alpha=0.8,
                 zorder=2
             )
+
+            # Hover 시 보여줄 정보(타임스탬프와 감정)을 각 artist에 연결
+            # → 한 윈도우에 두 개의 artist가 겹치므로, 하나만 툴팁
+            #    여기서는 내부 작은 점(artist_inner)에만
+            #    (큰 점에는 따로 달아도 되지만, 같은 좌표 + 여러 툴팁은 복잡하므로 생략)
+            scatter_artists.append((artist_inner, st, chat_e, audio_e))
+
+        # 2) mplcursors로 hover 툴팁 설정
+        #    hover=True로 하면, 마우스 오버 시 annotation이 뜹니다.
+        cursor = mplcursors.cursor(
+            [tpl[0] for tpl in scatter_artists],  # artist_inner 객체들
+            hover=True
+        )
+
+        @cursor.connect("add")
+        def on_add(sel):
+            # sel.artist: 마우스를 올린 실제 artist_inner 객체
+            picked_artist = sel.artist
+
+            # scatter_artists 리스트 중에서 artist_inner이 같은 튜플을 찾기
+            for art, start_ts, chat_e, audio_e in scatter_artists:
+                if art == picked_artist:
+                    # 이 튜플이 마우스가 올라간 점의 데이터
+                    hh, mm, ss = start_ts.split("-")
+                    time_str = f"{int(hh):02d}:{int(mm):02d}:{int(float(ss)):02d}"
+
+                    text = f"{time_str}\n채팅: {chat_e}\n스트리머: {audio_e}"
+                    sel.annotation.set_text(text)
+                    sel.annotation.get_bbox_patch().set_alpha(0.7)
+                    sel.annotation.get_bbox_patch().set_facecolor("white")
+                    sel.annotation.get_bbox_patch().set_edgecolor("black")
+                    sel.annotation.get_bbox_patch().set_linewidth(0.5)
+                    break  # 일치하는 튜플을 찾았으니 루프 종료
+
 
         # 4) 클릭 이벤트 연결 (필요 시 30초 클립 생성 등 구현)
         self.canvas.mpl_connect("button_press_event", self.on_click)

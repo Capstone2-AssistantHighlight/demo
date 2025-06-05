@@ -13,6 +13,7 @@ from PyQt5.QtCore import Qt, QRect, QThread, pyqtSignal
 
 from full_pipeline import full_pipeline  # full_pipeline 함수 임포트
 
+
 class FrameExtractionThread(QThread):
     """
     별도 스레드: 동영상에서 드래그 영역 기준으로 매초 이미지를 crop → 저장하며
@@ -22,11 +23,6 @@ class FrameExtractionThread(QThread):
     finished = pyqtSignal()
 
     def __init__(self, video_path, crop_coords, frames_dir):
-        """
-        video_path: 원본 비디오 경로 (예: '123.mp4')
-        crop_coords: (x, y, w, h) 형태의 튜플 (픽셀 단위)
-        frames_dir: 잘린 이미지를 저장할 폴더 경로 (예: '123_frames')
-        """
         super().__init__()
         self.video_path = video_path
         self.crop_x, self.crop_y, self.crop_w, self.crop_h = crop_coords
@@ -35,7 +31,6 @@ class FrameExtractionThread(QThread):
     def run(self):
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
-            # 비디오를 열 수 없으면 곧바로 종료 시그널
             self.finished.emit()
             return
 
@@ -43,14 +38,12 @@ class FrameExtractionThread(QThread):
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration_sec = int(total_frames / fps)
 
-        # 매 초마다 이미지 저장: 총 duration_sec + 1번 반복
         for sec in range(duration_sec + 1):
             cap.set(cv2.CAP_PROP_POS_MSEC, sec * 1000)
             ret, frame = cap.read()
             if not ret:
                 continue
 
-            # crop 영역: (y:y+h, x:x+w)
             crop_frame = frame[self.crop_y:self.crop_y + self.crop_h,
                                self.crop_x:self.crop_x + self.crop_w]
 
@@ -61,14 +54,13 @@ class FrameExtractionThread(QThread):
             output_path = os.path.join(self.frames_dir, f"{timestamp}.png")
             cv2.imwrite(output_path, crop_frame)
 
-            # 진행률 계산: (sec / duration_sec) * 100
             percent = int((sec / max(1, duration_sec)) * 100)
             self.progress.emit(percent)
 
         cap.release()
-        # 완료 시 100%를 보장
         self.progress.emit(100)
         self.finished.emit()
+
 
 class FullPipelineThread(QThread):
     """
@@ -83,11 +75,8 @@ class FullPipelineThread(QThread):
         self.wav_dir    = wav_dir
 
     def run(self):
-        # 실제로 시간이 오래 걸리는 full_pipeline을 여기에 옮겨서 수행
         full_pipeline(self.frames_dir, self.wav_dir)
-        # 작업이 모두 끝나면 시그널 방출
         self.finished.emit()
-
 
 
 class DraggableImageLabel(QLabel):
@@ -128,17 +117,19 @@ class ChatDragWindow(QWidget):
     def __init__(self, video_path, wav_dir):
         super().__init__()
         self.video_path = video_path
-        self.wav_dir = wav_dir  # main.py에서 넘겨준 <영상이름>_wav 폴더
+        self.wav_dir = wav_dir
         self.frame = None
         self.pixmap = None
         self.thread = None
+        self.pipeline_thread = None
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle('ScenePulsE - Drag Chat Window')
-        self.setGeometry(100, 100, 900, 700)
+        self.setGeometry(100, 100, 900, 750)
         self.setStyleSheet("background-color: black;")
 
+        # 안내 문구
         self.label = QLabel('댓글 창을 드래그 해주세요', self)
         self.label.setStyleSheet("color: white;")
         self.label.setFont(QFont('Arial', 16))
@@ -155,35 +146,51 @@ class ChatDragWindow(QWidget):
             self.image_label = QLabel('영상 불러오기 실패', self)
             self.image_label.setStyleSheet("color: red;")
 
-        # ① 진행률 바 (숨김 상태로 시작)
+        # 진행률 바 (숨김 상태로 시작)
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setValue(0)
         self.progress_bar.setFixedHeight(25)
         self.progress_bar.setVisible(False)
         self.progress_bar.setStyleSheet("QProgressBar { color: white; }")
 
-        # “채팅창 추출” 버튼: 드래그 영역 확정 → 프레임 추출 스레드 실행
+        # 1) “채팅창 추출” 버튼: 드래그 영역 확정 → 프레임 추출 스레드 실행
         self.select_btn = QPushButton('채팅창 추출', self)
         self.select_btn.setStyleSheet("color: red; font-weight: bold; font-size: 20px;")
         self.select_btn.clicked.connect(self.on_select_clicked)
 
-        # “분석 시작” 버튼: 프레임 저장 완료 후 활성화
+        # 2) “분석 시작” 버튼: 프레임 저장 완료 후 활성화 → full_pipeline 실행
         self.next_btn = QPushButton('분석 시작', self)
         self.next_btn.setStyleSheet("color: white; font-weight: bold; font-size: 20px;")
-        self.next_btn.setEnabled(False)
-        self.next_btn.clicked.connect(self.go_to_highlight)
+        self.next_btn.setVisible(False)
+        self.next_btn.clicked.connect(self.go_to_full_pipeline)
 
+        # 3) “그래프 보기” 버튼: full_pipeline 완료 후 활성화 → graph_viewer 실행
+        self.graph_btn = QPushButton('그래프 보기', self)
+        self.graph_btn.setStyleSheet("color: white; font-weight: bold; font-size: 20px;")
+        self.graph_btn.setVisible(False)
+        self.graph_btn.clicked.connect(self.open_graph_viewer)
+
+        # 4) “하이라이트 보기” 버튼: full_pipeline 완료 후 활성화 → highlight.py 실행
+        self.highlight_btn = QPushButton('하이라이트 보기', self)
+        self.highlight_btn.setStyleSheet("color: white; font-weight: bold; font-size: 20px;")
+        self.highlight_btn.setVisible(False)
+        self.highlight_btn.clicked.connect(self.open_highlight_viewer)
+
+        # 로고
         self.logo_label = QLabel('ScenePulsE', self)
         self.logo_label.setStyleSheet("color: white;")
         self.logo_label.setFont(QFont('Arial', 18, QFont.Bold))
         self.logo_label.setAlignment(Qt.AlignCenter)
 
+        # 레이아웃 구성
         layout = QVBoxLayout()
         layout.addWidget(self.label, alignment=Qt.AlignLeft | Qt.AlignTop)
         layout.addWidget(self.image_label, alignment=Qt.AlignHCenter)
-        layout.addWidget(self.progress_bar)  # ProgressBar 추가
+        layout.addWidget(self.progress_bar)
         layout.addWidget(self.select_btn, alignment=Qt.AlignHCenter)
         layout.addWidget(self.next_btn, alignment=Qt.AlignHCenter)
+        layout.addWidget(self.graph_btn, alignment=Qt.AlignHCenter)
+        layout.addWidget(self.highlight_btn, alignment=Qt.AlignHCenter)
         layout.addWidget(self.logo_label, alignment=Qt.AlignCenter)
         self.setLayout(layout)
 
@@ -220,7 +227,6 @@ class ChatDragWindow(QWidget):
             QMessageBox.warning(self, "경고", "드래그 영역을 먼저 선택해주세요!")
             return
 
-        # 드래그 영역 비율 → 실제 픽셀 좌표로 변환
         rect = self.image_label.selection_rect
         display_size = self.image_label.size()
         orig_h, orig_w, _ = self.frame.shape
@@ -233,17 +239,15 @@ class ChatDragWindow(QWidget):
         crop_w = int(rect.width() * x_ratio)
         crop_h = int(rect.height() * y_ratio)
 
-        # 이미지 저장할 폴더: <base_name>_frames
         base_name = os.path.splitext(os.path.basename(self.video_path))[0]
         frames_dir = f"{base_name}_frames"
         os.makedirs(frames_dir, exist_ok=True)
 
-        # ProgressBar 보이기, 초기화
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(True)
-        self.select_btn.setEnabled(False)  # 중복 클릭 방지
+        self.select_btn.setVisible(False)   # 채팅창 추출 버튼 숨기기
 
-        # 스레드 생성 및 실행
+        # FrameExtractionThread 실행
         self.thread = FrameExtractionThread(
             video_path=self.video_path,
             crop_coords=(crop_x, crop_y, crop_w, crop_h),
@@ -256,58 +260,97 @@ class ChatDragWindow(QWidget):
     def on_extraction_done(self):
         """
         FrameExtractionThread가 완료된 후 호출
-        → 프로그래스바 숨기고, “RUN FULL PIPELINE” 버튼 활성화
+        → 프로그래스바 숨기고, “분석 시작” 버튼 보이기
         """
         self.progress_bar.setVisible(False)
-        QMessageBox.information(self, "완료", f"{os.path.splitext(os.path.basename(self.video_path))[0]}_frames에 프레임이 저장되었습니다!")
-        self.next_btn.setEnabled(True)
+        QMessageBox.information(
+            self, "완료",
+            f"{os.path.splitext(os.path.basename(self.video_path))[0]}_frames에 프레임이 저장되었습니다!"
+        )
+        # “분석 시작” 버튼만 보이도록 설정
+        self.next_btn.setVisible(True)
+        self.graph_btn.setVisible(False)
+        self.highlight_btn.setVisible(False)
 
-    def go_to_highlight(self):
+    def go_to_full_pipeline(self):
         """
-        1) '분석 시작' 버튼을 누르면, full_pipeline을 별도 스레드에서 실행.
-        2) 완료 시점에 highlight.py를 호출하고, 현재 창을 닫음.
+        '분석 시작' 버튼을 누르면, full_pipeline을 별도 스레드에서 실행.
+        완료 시점에 on_pipeline_done 호출
         """
-        # ① 버튼 중복 클릭 방지
-        self.next_btn.setEnabled(False)
+        self.next_btn.setVisible(False)     # 분석 시작 버튼 숨기기
+        self.graph_btn.setVisible(False)
+        self.highlight_btn.setVisible(False)
 
         base_name = os.path.splitext(os.path.basename(self.video_path))[0]
         frames_dir = f"{base_name}_frames"
         wav_dir    = self.wav_dir
 
-        # ② pipeline 스레드 생성 및 실행
         self.pipeline_thread = FullPipelineThread(frames_dir, wav_dir)
         self.pipeline_thread.finished.connect(self.on_pipeline_done)
-
         self.pipeline_thread.start()
 
     def on_pipeline_done(self):
         """
-        FullPipelineThread의 run()이 끝난 직후 호출됨.
-        → highlight.py 실행, 현재 창 닫기
+        FullPipelineThread의 run()이 끝나면 호출.
+        → “그래프 보기” 및 “하이라이트 보기” 버튼 보이기
         """
+        QMessageBox.information(self, "완료", "분석이 모두 완료되었습니다!")
+        self.graph_btn.setVisible(True)
+        self.highlight_btn.setVisible(True)
 
+    def open_graph_viewer(self):
+        """
+        full_pipeline이 이미 완료되었거나, speed/emotion/audio JSON이 준비되었는지 확인 후
+        graph_viewer.py를 실행해서 새로운 창 띄우기
+        """
         base_name = os.path.splitext(os.path.basename(self.video_path))[0]
-        output_folder = f"{base_name}_output/highlight_output"
-        os.makedirs(output_folder, exist_ok=True)
+        output_dir = f"{base_name}_output"
+        speed_json    = os.path.join(output_dir, "speed_rankings.json")
+        chat_emo_json = os.path.join(output_dir, "emotion_by_line.json")
+        audio_emo_json= os.path.join(output_dir, "audio_emotion.json")
 
-        # highlight.py 호출
+        for p in (speed_json, chat_emo_json, audio_emo_json):
+            if not os.path.exists(p):
+                QMessageBox.warning(self, "경고", f"{p} 파일을 찾을 수 없습니다.\n먼저 '분석 시작'을 눌러주세요.")
+                return
+
+        subprocess.Popen([
+            sys.executable, "graph_viewer.py",
+            self.video_path,
+            speed_json,
+            chat_emo_json,
+            audio_emo_json
+        ])
+
+    def open_highlight_viewer(self):
+        """
+        full_pipeline이 완료된 뒤에, highlight.py를 실행하고
+        (highlight.py 내부에서 highlight_result.json 생성 → highlight_viewer 호출)
+        """
+        base_name = os.path.splitext(os.path.basename(self.video_path))[0]
+        output_dir = f"{base_name}_output"
+        emotion_json = os.path.join(output_dir, "emotion_by_line.json")
+        speed_json   = os.path.join(output_dir, "speed_rankings.json")
+        audio_json   = os.path.join(output_dir, "audio_emotion.json")
+        highlight_output = os.path.join(output_dir, "highlight_output")
+
+        for p in (emotion_json, speed_json, audio_json):
+            if not os.path.exists(p):
+                QMessageBox.warning(self, "경고", f"{p} 파일을 찾을 수 없습니다.\n먼저 '분석 시작'을 눌러주세요.")
+                return
+
         subprocess.Popen([
             sys.executable, "highlight.py",
             self.video_path,
-            f"{base_name}_output/emotion_by_line.json",
-            f"{base_name}_output/speed_rankings.json",
-            f"{base_name}_output/audio_emotion.json",
-            output_folder
+            emotion_json,
+            speed_json,
+            audio_json,
+            highlight_output
         ])
-
-        # 창 닫기
-        self.close()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # drag.py를 직접 실행할 때에는 video_path, wav_dir 두 개 인자를 전달해야 함
-    # 예: python drag.py 123.mp4 123_wav
     video_path = sys.argv[1] if len(sys.argv) > 1 else ''
     wav_dir    = sys.argv[2] if len(sys.argv) > 2 else ''
     window = ChatDragWindow(video_path, wav_dir)

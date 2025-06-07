@@ -123,7 +123,6 @@ class GraphViewer(QWidget):
         # 5) 시각화 시 “시간 순서”대로 그리기 위해 정렬해 둠
         self.points.sort(key=lambda x: x[0])
 
-
     def initUI(self):
         self.setWindowTitle("속도 + 감정 그래프 (원 안에 원 형태)")
         self.setGeometry(100, 100, 1800, 500)
@@ -131,24 +130,22 @@ class GraphViewer(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        # Matplotlib Figure / Canvas
-        self.fig = Figure(figsize=(9, 5))
+        # Matplotlib Figure / Canvas (다크 테마 적용)
+        self.fig = Figure(figsize=(9, 5), facecolor="#121212")
         self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
 
-        self.ax = self.fig.add_subplot(111)
-        self.ax.set_title("Chat Speed + Emotion")
-        self.ax.set_xlabel("Time (seconds)")
-        self.ax.set_ylabel("Chat Speed (lines per 5s)")
-        # 격자는 너무 진하면 복잡해 보이므로 꺼두거나 연하게
-        self.ax.grid(False)
+        self.ax = self.fig.add_subplot(111, facecolor="#121212")
+        self.ax.set_title("Chat Speed + Emotion", fontsize=14, color="white", weight="bold")
+        self.ax.set_xlabel("Time (seconds)", fontsize=12, color="white")
+        self.ax.set_ylabel("Chat Speed (lines per 5s)", fontsize=12, color="white")
+        self.ax.tick_params(axis='both', labelsize=10, colors='white')
+        self.ax.grid(True, linestyle='--', linewidth=0.5, color="#444444")
 
         legend_handles = []
         for emo, color in COLOR_MAP.items():
-            # Patch 객체에 해당 감정 이름과 색상을 넣어서 레전드 항목으로 사용
             legend_handles.append(Patch(facecolor=color, edgecolor="white", label=emo))
-        # loc="upper left", bbox_to_anchor으로 좌측 상단에 고정
-        self.ax.legend(
+        legend = self.ax.legend(
             handles=legend_handles,
             title="Emotion",
             loc="upper left",
@@ -156,107 +153,88 @@ class GraphViewer(QWidget):
             fontsize=9,
             title_fontsize=10,
             frameon=True,
-            framealpha=0.5
+            framealpha=0.5,
+            facecolor="#222222",
+            edgecolor="white"
         )
 
-        # (선택) “채팅 속도 추세”는 그리지 않고, 원만 표시할 것이므로 plot 코드는 생략했습니다.
-        # 만약 그리기를 원하면, 아래 줄을 참고:
-        # xs_sorted = [pt[0] for pt in self.points]
-        # ys_sorted = [pt[1] for pt in self.points]
-        # self.ax.plot(xs_sorted, ys_sorted, color="gray", linewidth=0.5, alpha=0.3)
+        legend.get_title().set_color("white")
+        for text in legend.get_texts():
+            text.set_color("white")
 
-        # 0) 정렬된 순서대로 선 연결
-        #if len(xs_sorted) > 0:
-        #    self.ax.plot(xs_sorted, ys_sorted, color="gray", linewidth=1, alpha=0.4, label="Chat Speed Trend")
-        #    self.ax.legend(loc="upper left", fontsize=8)
+        outer_size = 100
+        inner_size = 50
 
-        # 2) 겹쳐진 원의 크기 설정 (마커 면적 단위: points^2)
-        #    outer_size: 큰 원 (스트리머 감정) 크기
-        #    inner_size: 작은 원 (채팅창 감정) 크기
-        outer_size = 100   # 예: 80 포인트^2
-        inner_size = 50   # 예: 30 포인트^2
-
-        scatter_artists = []  # 툴팁 기능을 걸 점(artists)을 모아둘 리스트
+        scatter_artists = []
         for cx, ly, chat_e, audio_e, st, et in self.points:
-            # 큰 원: 스트리머 감정
             artist_outer = self.ax.scatter(
                 cx, ly,
                 c=COLOR_MAP.get(audio_e, "black"),
                 s=outer_size,
                 marker="o",
-                edgecolors="white",
-                linewidths=0.5,
+                edgecolors="#222222",
+                linewidths=0.8,
                 alpha=0.5,
                 zorder=1
             )
-            # 작은 원: 채팅창 감정
             artist_inner = self.ax.scatter(
                 cx, ly,
                 c=COLOR_MAP.get(chat_e, "black"),
                 s=inner_size,
                 marker="o",
-                edgecolors="white",
-                linewidths=0.5,
+                edgecolors="#222222",
+                linewidths=0.8,
                 alpha=0.8,
                 zorder=2
             )
-
-            # Hover 시 보여줄 정보(타임스탬프와 감정)을 각 artist에 연결
-            # → 한 윈도우에 두 개의 artist가 겹치므로, 하나만 툴팁
-            #    여기서는 내부 작은 점(artist_inner)에만
-            #    (큰 점에는 따로 달아도 되지만, 같은 좌표 + 여러 툴팁은 복잡하므로 생략)
             scatter_artists.append((artist_inner, st, chat_e, audio_e))
 
-        # 2) mplcursors로 hover 툴팁 설정
-        #    hover=True로 하면, 마우스 오버 시 annotation이 뜹니다.
-        cursor = mplcursors.cursor(
-            [tpl[0] for tpl in scatter_artists],  # artist_inner 객체들
-            hover=True
-        )
+        cursor = mplcursors.cursor([tpl[0] for tpl in scatter_artists], hover=True)
 
         @cursor.connect("add")
         def on_add(sel):
-            # sel.artist: 마우스를 올린 실제 artist_inner 객체
             picked_artist = sel.artist
-
-            # scatter_artists 리스트 중에서 artist_inner이 같은 튜플을 찾기
             for art, start_ts, chat_e, audio_e in scatter_artists:
                 if art == picked_artist:
-                    # 이 튜플이 마우스가 올라간 점의 데이터
                     hh, mm, ss = start_ts.split("-")
                     time_str = f"{int(hh):02d}:{int(mm):02d}:{int(float(ss)):02d}"
-
                     text = f"{time_str}\n채팅: {chat_e}\n스트리머: {audio_e}"
                     sel.annotation.set_text(text)
                     sel.annotation.get_bbox_patch().set_alpha(0.7)
-                    sel.annotation.get_bbox_patch().set_facecolor("white")
-                    sel.annotation.get_bbox_patch().set_edgecolor("black")
+                    sel.annotation.get_bbox_patch().set_facecolor("#eeeeee")
+                    sel.annotation.get_bbox_patch().set_edgecolor("#222222")
                     sel.annotation.get_bbox_patch().set_linewidth(0.5)
-                    break  # 일치하는 튜플을 찾았으니 루프 종료
+                    break
 
+        # 하단 로고 추가
+        self.ax.text(
+            0.5, -0.13,  # ← y좌표 -0.15 → 0.01로 수정
+            "ScenePulsE",
+            fontsize=22,
+            color='white',
+            ha='center',
+            va='bottom',
+            fontweight='bold',
+            fontname='Arial',
+            transform=self.ax.transAxes
+        )
 
-        # 4) 클릭 이벤트 연결 (필요 시 30초 클립 생성 등 구현)
         self.canvas.mpl_connect("button_press_event", self.on_click)
-
         self.canvas.draw()
 
     def on_click(self, event):
         if event.inaxes != self.ax:
             return
 
-        # 클릭한 x 좌표(초)와 가장 가까운 포인트 인덱스 찾기 (단순 절댓값 비교)
         click_x = event.xdata
         distances = [abs(click_x - pt[0]) for pt in self.points]
         idx = int(min(range(len(distances)), key=lambda i: distances[i]))
 
-        # 선택된 포인트 정보
         center_sec, line_count, chat_e, audio_e, start_ts, end_ts = self.points[idx]
 
-        # 클립 구간 계산: 중심 ± 15초
         clip_start = max(center_sec - 15.0, 0.0)
-        clip_end   = center_sec + 15.0
+        clip_end = center_sec + 15.0
 
-        # 실제 영상 길이와 비교
         try:
             video = VideoFileClip(self.video_path)
             total_dur = video.duration
@@ -266,14 +244,12 @@ class GraphViewer(QWidget):
             QMessageBox.critical(self, "오류", f"비디오를 열 수 없습니다:\n{str(e)}")
             return
 
-        # 저장할 클립 경로
         base_name = os.path.splitext(os.path.basename(self.video_path))[0]
         out_dir = f"{base_name}_graph_clips"
         os.makedirs(out_dir, exist_ok=True)
         clip_filename = f"{base_name}_{seconds_to_timestamp(clip_start)}_to_{seconds_to_timestamp(clip_end)}.mp4"
         clip_path = os.path.join(out_dir, clip_filename)
 
-        # 이미 파일이 있으면 재생만, 없으면 생성 후 재생
         if not os.path.exists(clip_path):
             try:
                 subclip = video.subclip(clip_start, clip_end)
@@ -285,11 +261,9 @@ class GraphViewer(QWidget):
 
         video.close()
 
-        # 클립 재생 (Windows: os.startfile / macOS: open / Linux: xdg-open 등 사용 가능)
         try:
             os.startfile(clip_path)
         except AttributeError:
-            # Windows가 아닐 경우
             if sys.platform.startswith("darwin"):
                 os.system(f"open \"{clip_path}\"")
             else:
@@ -307,5 +281,8 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     gv = GraphViewer(video_path, speed_json, chat_emo_json, audio_emo_json)
+    gv.show()
+    sys.exit(app.exec_())
+
     gv.show()
     sys.exit(app.exec_())

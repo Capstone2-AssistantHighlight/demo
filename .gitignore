@@ -18,6 +18,5 @@ capston2_output/
 capston2_wav/
 epoch12_final.pth
 dist/
-main.spec
 build/
 test.py

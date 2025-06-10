@@ -119,7 +119,7 @@ else:
     # 개발 중일 때
     base_path = os.path.abspath(".")
 
-model_path = os.path.join(base_path, "epoch12_final.pth")
+model_path = os.path.join(base_path, "epoch20_final.pth")
 checkpoint = torch.load(model_path, map_location="cuda")
 
 model.load_state_dict(checkpoint["model_state_dict"])

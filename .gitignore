@@ -11,3 +11,12 @@ capston1_wav/
 123/
 frame_output/
 capston1_graph_clips/
+capston2.mp4
+capston2_frames/
+capston2_graph_clips/
+capston2_output/
+capston2_wav/
+epoch12_final.pth
+dist/
+main.spec
+

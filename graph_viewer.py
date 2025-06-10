@@ -4,6 +4,7 @@ import os
 import json
 import math
 import mplcursors
+import subprocess
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QMessageBox
@@ -234,7 +235,20 @@ class GraphViewer(QWidget):
 
         clip_start = max(center_sec - 15.0, 0.0)
         clip_end = center_sec + 15.0
+        duration = clip_end - clip_start
 
+        # ffplay로 바로 재생 (–autoexit: 재생 후 창 자동 종료)
+        try:
+            subprocess.Popen([
+                "ffplay",
+                "-ss", str(clip_start),
+                "-t", str(duration),
+                "-autoexit",
+                self.video_path
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            QMessageBox.critical(self, "오류", f"FFplay 실행 실패:\n{str(e)}")
+        """
         try:
             video = VideoFileClip(self.video_path)
             total_dur = video.duration
@@ -267,9 +281,11 @@ class GraphViewer(QWidget):
             if sys.platform.startswith("darwin"):
                 os.system(f"open \"{clip_path}\"")
             else:
-                os.system(f"xdg-open \"{clip_path}\"")
+                os.system(f"xdg-open \"{clip_path}\"") 
+        """
 
 if __name__ == "__main__":
+    #python graph_viewer.py capston2.mp4 capston2_output/speed_rankings.json capston2_output/emotion_by_line.json capston2_output/audio_emotion.json
     if len(sys.argv) < 5:
         print("사용법: python graph_viewer.py <video.mp4> <speed_json> <chat_emo_json> <audio_emo_json>")
         sys.exit(1)

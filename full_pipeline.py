@@ -223,7 +223,7 @@ def compute_emotion_by_line(pipeline_json, out_path, kobert_dir, window_size=5):
         preds = predict_text_list_with_heuristic(text_list, tokenizer, model, id2label, device)
         cnt = Counter(preds)
         top_emotion, top_count = cnt.most_common(1)[0]
-        rep = top_emotion if top_count / len(preds) >= 0.5 else "중립"
+        rep = top_emotion if top_count / len(preds) >= 0.4 else "중립"
         start_str = fmt_time(win_start)
         end_str = fmt_time(win_start + window_size - 1)
         results.append({

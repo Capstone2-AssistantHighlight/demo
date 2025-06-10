@@ -112,7 +112,7 @@ model = FusionModel(
     dropout=0.2
 ).to("cuda")
 
-checkpoint = torch.load("epoch10_ko.pth", map_location="cuda")
+checkpoint = torch.load("epoch12_final.pth", map_location="cuda")
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 

@@ -1,6 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-
+import os, sys
 import torch
 import numpy as np
 import librosa
@@ -112,7 +112,16 @@ model = FusionModel(
     dropout=0.2
 ).to("cuda")
 
-checkpoint = torch.load("epoch12_final.pth", map_location="cuda")
+if getattr(sys, 'frozen', False):
+    # PyInstaller로 패킹된 실행파일인 경우
+    base_path = sys._MEIPASS
+else:
+    # 개발 중일 때
+    base_path = os.path.abspath(".")
+
+model_path = os.path.join(base_path, "epoch12_final.pth")
+checkpoint = torch.load(model_path, map_location="cuda")
+
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 

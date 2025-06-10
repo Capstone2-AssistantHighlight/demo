@@ -20,5 +20,4 @@ epoch12_final.pth
 dist/
 main.spec
 build/
-
-
+test.py

@@ -125,7 +125,7 @@ class GraphViewer(QWidget):
         self.points.sort(key=lambda x: x[0])
 
     def initUI(self):
-        self.setWindowTitle("속도 + 감정 그래프 (원 안에 원 형태)")
+        self.setWindowTitle("High-Mate - 하이라이트 그래프")
         self.setGeometry(100, 100, 1800, 500)
 
         layout = QVBoxLayout()
@@ -210,7 +210,7 @@ class GraphViewer(QWidget):
         # 하단 로고 추가
         self.ax.text(
             0.5, -0.13,  # ← y좌표 -0.15 → 0.01로 수정
-            "ScenePulsE",
+            "High-Mate",
             fontsize=22,
             color='white',
             ha='center',

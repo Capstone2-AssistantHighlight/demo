@@ -125,7 +125,7 @@ class ChatDragWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('ScenePulsE - Drag Chat Window')
+        self.setWindowTitle('High-Mate - 채팅창 드래그')
         self.setGeometry(100, 100, 900, 750)
         self.setStyleSheet("background-color: black;")
 
@@ -177,7 +177,7 @@ class ChatDragWindow(QWidget):
         self.highlight_btn.clicked.connect(self.open_highlight_viewer)
 
         # 로고
-        self.logo_label = QLabel('ScenePulsE', self)
+        self.logo_label = QLabel('High-Mate', self)
         self.logo_label.setStyleSheet("color: white;")
         self.logo_label.setFont(QFont('Arial', 18, QFont.Bold))
         self.logo_label.setAlignment(Qt.AlignCenter)
@@ -294,7 +294,20 @@ class ChatDragWindow(QWidget):
         FullPipelineThread의 run()이 끝나면 호출.
         → “그래프 보기” 및 “하이라이트 보기” 버튼 보이기
         """
-        QMessageBox.information(self, "완료", "분석이 모두 완료되었습니다!")
+        # 출력 디렉토리 이름 계산
+        base_name = os.path.splitext(os.path.basename(self.video_path))[0]
+        output_dir = f"{base_name}_output"
+
+        msg = QMessageBox(QMessageBox.Information, "분석 완료", "")
+        msg.setText("✅ 분석이 모두 완료되었습니다!")
+        msg.setInformativeText(
+            f"결과 파일들은 \"{output_dir}\" 폴더에\n저장되었습니다.\n"
+            "이제 아래 버튼을 눌러 결과를 확인하세요:\n"
+            " • 그래프 보기\n"
+            " • 하이라이트 보기"
+        )
+        msg.exec_()
+
         self.graph_btn.setVisible(True)
         self.highlight_btn.setVisible(True)
 
@@ -350,9 +363,13 @@ class ChatDragWindow(QWidget):
 
 
 if __name__ == '__main__':
+    try:
+        video_path, wav_dir = sys.argv[1], sys.argv[2]
+    except IndexError:
+        print("사용법: python drag.py <video_path> <wav_dir>")
+        sys.exit(1)
+
     app = QApplication(sys.argv)
-    video_path = sys.argv[1] if len(sys.argv) > 1 else ''
-    wav_dir    = sys.argv[2] if len(sys.argv) > 2 else ''
     window = ChatDragWindow(video_path, wav_dir)
     window.show()
     sys.exit(app.exec_())

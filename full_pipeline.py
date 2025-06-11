@@ -73,7 +73,7 @@ def compute_speed_ranking(pipeline_json, out_path, window_size=5):
 
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(stats, f, ensure_ascii=False, indent=2)
-
+    print(f"윈도우별 속도 결과가 '{out_path}' 에 저장되었습니다.")
 
 # -------------------------------------------------------------------
 # 3) 감정 분석 함수 (라인별, 50% 보유 시 대표 감정, else 중립)
@@ -226,10 +226,12 @@ def compute_emotion_by_line(pipeline_json, out_path, kobert_dir, window_size=5):
         rep = top_emotion if top_count / len(preds) >= 0.4 else "중립"
         start_str = fmt_time(win_start)
         end_str = fmt_time(win_start + window_size - 1)
+        percent = round(top_count / len(preds) * 100, 2)
         results.append({
             "start_time": start_str,
             "end_time": end_str,
-            "emotion": rep
+            "emotion": rep,
+            "emotion_percent": percent
         })
 
     # 5) 결과 저장

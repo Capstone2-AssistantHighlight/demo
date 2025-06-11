@@ -71,6 +71,9 @@ def merge_jsons(emotion_path: str, speed_path: str, audio_path: str, output_path
         )
         chat_emotion = matching_emotion["emotion"] if matching_emotion else "중립"
 
+        raw_percent = matching_emotion.get("emotion_percent", 0) if matching_emotion else 0
+        chat_emotion_percent = round(raw_percent, 2)
+
         # 3-2) 이전 5초 구간 계산
         start_sec = timestamp_to_seconds(chat_start)
         prev_start_sec = start_sec - 5
@@ -92,6 +95,7 @@ def merge_jsons(emotion_path: str, speed_path: str, audio_path: str, output_path
             "start_time": prev_start_ts,
             "end_time": chat_end,
             "chat_emotion": chat_emotion,
+            "chat_emotion_percent": chat_emotion_percent,
             "audio_emotion": audio_emotion,
             "chat_speed": chat_speed,
             "chat_rank": chat_rank
@@ -123,15 +127,11 @@ def generate_clips_and_thumbnails(video_path, json_input_path, output_dir="highl
     for idx, item in enumerate(highlights, start=1):
         start_sec = timestamp_to_seconds(item["start_time"])
         end_sec = timestamp_to_seconds(item["end_time"])
-
-        clip = video.subclip(start_sec, end_sec)
-        clip_path = os.path.join(output_dir, f"clip{idx}.mp4")
-        clip.write_videofile(clip_path, codec="libx264", audio_codec="aac", logger=None)
-
         img_path = os.path.join(output_dir, f"highlight{idx}.png")
-        clip.save_frame(img_path, t=0.5)
 
-        item["clip"] = clip_path
+        with video.subclip(start_sec, end_sec) as clip:
+            clip.save_frame(img_path, t=0.5)
+
         item["screenshot"] = img_path
         enriched.append(item)
 
@@ -172,7 +172,9 @@ class LoadingUI(QWidget):
     """
     def __init__(self, video_path, emotion_path, speed_path,audio_path, merged_json_path, output_dir):
         super().__init__()
-        self.setWindowTitle("ScenePulsE - 하이라이트 생성 중")
+        self.video_path = video_path
+
+        self.setWindowTitle("High-Mate - 하이라이트 생성 중")
         self.setGeometry(400, 300, 400, 150)
         self.setStyleSheet("background-color: black;")
 
@@ -197,7 +199,7 @@ class LoadingUI(QWidget):
         highlight_viewer.py를 실행하도록 한다.
         """
         self.close()
-        subprocess.run(["python", "highlight_viewer.py",json_path])
+        subprocess.run([sys.executable,"highlight_viewer.py",self.video_path,json_path])
 
 # ---------- 4. json병합, 하이라이트 클립생성 실행 ----------
 

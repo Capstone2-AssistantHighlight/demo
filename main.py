@@ -59,7 +59,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('ScenePulsE - 영상 업로드')
+        self.setWindowTitle('High-Mate - 영상 업로드')
         self.setGeometry(100, 100, 600, 450)
         self.setStyleSheet("background-color: black;")
 
@@ -91,7 +91,7 @@ class MainWindow(QWidget):
         self.next_btn.setEnabled(False)
 
         # 하단 로고
-        self.logo_label = QLabel('ScenePulsE', self)
+        self.logo_label = QLabel('High-Mate', self)
         self.logo_label.setStyleSheet("color: white;")
         self.logo_label.setFont(QFont('Arial', 18, QFont.Bold))
         self.logo_label.setAlignment(Qt.AlignCenter)

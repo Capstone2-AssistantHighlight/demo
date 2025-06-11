@@ -10,7 +10,7 @@ a = Analysis(
     ('dtrb', 'dtrb'),
     ('yolov5', 'yolov5'),
     ('best_full_kobert_epoch2', 'best_full_kobert_epoch2'),
-    ('epoch12_final.pth', '.')
+    ('epoch20_final.pth', '.')
     ],
     hiddenimports=[],
     hookspath=[],

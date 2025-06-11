@@ -197,5 +197,5 @@ def process_folder(input_dir, output_json_path):
     with open(output_json_path, "w", encoding="utf-8") as fout:
         json.dump(audio_list, fout, ensure_ascii=False, indent=2)
 
-    print(f"\n결과를 '{output_json_path}'에 저장했습니다.")
+    print(f"\n음성 결과를 '{output_json_path}'에 저장했습니다.")
 

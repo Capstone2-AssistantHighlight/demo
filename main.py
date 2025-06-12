@@ -60,7 +60,7 @@ class MainWindow(QWidget):
 
     def initUI(self):
         self.setWindowTitle('High-Mate - 영상 업로드')
-        self.setGeometry(100, 100, 600, 450)
+        self.setGeometry(100, 100, 900, 750)
         self.setStyleSheet("background-color: black;")
 
         # 상단 안내 문구
@@ -71,9 +71,9 @@ class MainWindow(QWidget):
 
         # 영상 선택 버튼
         self.upload_btn = QPushButton(self)
-        self.upload_btn.setFixedSize(800, 450)
+        self.upload_btn.setFixedSize(800, 600)
         self.upload_btn.setText("+")
-        self.upload_btn.setFont(QFont('Arial', 150))
+        self.upload_btn.setFont(QFont('Arial', 200))
         self.upload_btn.setStyleSheet("background-color: white; color: black; border-radius: 50px;")
         self.upload_btn.clicked.connect(self.openFileNameDialog)
 
@@ -124,12 +124,12 @@ class MainWindow(QWidget):
 
     def on_extraction_done(self, wav_dir: str):
         self.wav_dir = wav_dir
-        self.show_message("Success", f"오디오 분할 완료: '{wav_dir}' 폴더 생성됨")
+        self.show_message("완료", f"오디오 분할 완료: '{wav_dir}' 폴더 생성됨")
         # NEXT 버튼 활성화
         self.next_btn.setEnabled(True)
 
     def on_extraction_error(self, error):
-        self.show_message("Error", f"오디오 추출 실패 다시 비디오를 넣어주세요", error=True)
+        self.show_message("에러", f"오디오 추출 실패 다시 비디오를 넣어주세요", error=True)
 
     def show_message(self, title, text, error=False):
         msg = QMessageBox(self)

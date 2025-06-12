@@ -126,7 +126,7 @@ class GraphViewer(QWidget):
 
     def initUI(self):
         self.setWindowTitle("High-Mate - 하이라이트 그래프")
-        self.setGeometry(100, 100, 1800, 500)
+        self.setGeometry(100, 100, 1800, 750)
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -137,7 +137,7 @@ class GraphViewer(QWidget):
         layout.addWidget(self.canvas)
 
         self.ax = self.fig.add_subplot(111, facecolor="#121212")
-        self.ax.set_title("Chat Speed + Emotion", fontsize=14, color="white", weight="bold")
+        self.ax.set_title("          ", fontsize=14, color="white", weight="bold")
         self.ax.set_xlabel("Time (seconds)", fontsize=12, color="white")
         self.ax.set_ylabel("Chat Speed (lines per 5s)", fontsize=12, color="white")
         self.ax.tick_params(axis='both', labelsize=10, colors='white')
@@ -285,7 +285,7 @@ class GraphViewer(QWidget):
         """
 
 if __name__ == "__main__":
-    #python graph_viewer.py capston2.mp4 capston2_output/speed_rankings.json capston2_output/emotion_by_line.json capston2_output/audio_emotion.json
+    #python graph_viewer.py ex3.mp4 ex3_output/speed_rankings.json ex3_output/emotion_by_line.json ex3_output/audio_emotion.json
     if len(sys.argv) < 5:
         print("사용법: python graph_viewer.py <video.mp4> <speed_json> <chat_emo_json> <audio_emo_json>")
         sys.exit(1)

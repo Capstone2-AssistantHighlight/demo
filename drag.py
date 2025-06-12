@@ -142,6 +142,12 @@ class ChatDragWindow(QWidget):
                 self.pixmap.scaled(900, 600, Qt.KeepAspectRatio), self
             )
             self.image_label.setAlignment(Qt.AlignCenter)
+            self.image_label.setStyleSheet(
+                """
+                border: 1px solid white;
+                border-radius: 2px;
+                """
+            )
         else:
             self.image_label = QLabel('영상 불러오기 실패', self)
             self.image_label.setStyleSheet("color: red;")
@@ -263,8 +269,8 @@ class ChatDragWindow(QWidget):
         → 프로그래스바 숨기고, “분석 시작” 버튼 보이기
         """
         self.progress_bar.setVisible(False)
-        self.show_message("완료", f"{os.path.splitext(os.path.basename(self.video_path))[0]}_frames에 프레임이 저장되었습니다!")
-
+        msg = QMessageBox(QMessageBox.Information, "완료", "프레임이 저장되었습니다!")
+        msg.exec_()
         # “분석 시작” 버튼만 보이도록 설정
         self.next_btn.setVisible(True)
         self.graph_btn.setVisible(False)
@@ -295,9 +301,6 @@ class ChatDragWindow(QWidget):
         # 출력 디렉토리 이름 계산
         base_name = os.path.splitext(os.path.basename(self.video_path))[0]
         output_dir = f"{base_name}_output"
-
-        self.show_message("분석 완료", "✅ 분석이 모두 완료되었습니다!" f"결과 파일들은 \"{output_dir}\" 폴더에\n저장되었습니다.\n"
-            "이제 아래 버튼을 눌러 결과를 확인하세요:\n")
 
         msg = QMessageBox(QMessageBox.Information, "분석 완료", "")
         msg.setText("✅ 분석이 모두 완료되었습니다!")

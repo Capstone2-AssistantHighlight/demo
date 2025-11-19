@@ -21,6 +21,8 @@ High-Mate는 실시간 스트리밍 영상에서 채팅 속도, 채팅 감정, �
 ### 차별점
 기존 서비스들과 달리 단순한 수치 기반이 아닌 **채팅창 반응 속도 + 감정 변화 분석**을 함께 활용하여, 시청자와 스트리머의 심리적 반응과 실시간 분위기를 동시에 파악할 수 있습니다.
 
+![화면 녹화 중 2025-06-13 022824](https://github.com/user-attachments/assets/4b650685-215b-46ae-9037-ea773bd3a302)
+
 - ⚡ **빠른 처리 속도**: 40분 영상 기준 10분 이내 처리 (기존 15~20분 대비 50% 단축)
 - 🎭 **맥락 이해**: 단순 반응량이 아닌 감정 정보 제공으로 상황 파악 용이
 - 🔍 **다양한 필터링**: 감정별, 크기별 정렬로 원하는 구간 빠른 탐색
@@ -57,21 +59,24 @@ High-Mate는 실시간 스트리밍 영상에서 채팅 속도, 채팅 감정, �
 
 ### 2. 영상 업로드
 스트리밍 영상 파일(mp4) 업로드
-<img width="1919" height="1021" alt="스크린샷 2025-06-12 031828" src="https://github.com/user-attachments/assets/b150fb90-a27c-46f0-a734-d1658aea7ed5" />
+<img width="800" height="479" alt="스크린샷 2025-06-12 031828" src="https://github.com/user-attachments/assets/b150fb90-a27c-46f0-a734-d1658aea7ed5" />
 
 ### 3. 채팅창 지정
 화면에서 채팅창 영역을 드래그로 지정
-<img width="918" height="779" alt="drag 3" src="https://github.com/user-attachments/assets/4c9885a4-eef3-422d-9396-de611d5ec1e4" />
+<img width="800" height="479" alt="drag 3" src="https://github.com/user-attachments/assets/4c9885a4-eef3-422d-9396-de611d5ec1e4" />
 
 ### 4. 분석 대기
 자동으로 텍스트/음성 감정 분석 및 채팅 속도 분석 진행
-<img width="451" height="180" alt="하이라이트" src="https://github.com/user-attachments/assets/d880fbad-eb53-4d3d-8046-63dc2ba1a640" />
+
+<img width="800" height="479" alt="스크린샷 2025-11-19 131115" src="https://github.com/user-attachments/assets/ac05f18c-959e-4d01-a712-cc3930b77912" />
+
 
 ### 5. 결과 확인
 - **리스트 뷰**: 구간별 정보, 썸네일, 감정별 필터링
-- <img width="788" height="578" alt="하이라이트뷰" src="https://github.com/user-attachments/assets/33673526-f8de-4008-a3d7-c8a4495d5f88" />
+<img width="800" height="479" alt="하이라이트뷰" src="https://github.com/user-attachments/assets/33673526-f8de-4008-a3d7-c8a4495d5f88" />
+
 - **그래프 뷰**: 시간축 기반 감정 분포 시각화
-<img width="1797" height="524" alt="그래프" src="https://github.com/user-attachments/assets/f16f6360-9f2e-4daf-a5d1-dfc34d50b920" />
+<img width="800" height="479" alt="그래프" src="https://github.com/user-attachments/assets/f16f6360-9f2e-4daf-a5d1-dfc34d50b920" />
 
 ## 📱 화면 구성
 
